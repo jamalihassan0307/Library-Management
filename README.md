@@ -2,6 +2,27 @@
 
 A modern web application for managing library operations, built with React and Firebase. This system helps librarians manage books, track borrowing records, and handle user accounts efficiently.
 
+<div align="center">
+
+[![React](https://img.shields.io/badge/React-18-blue.svg)](https://reactjs.org/)
+[![Vite](https://img.shields.io/badge/Vite-Latest-646CFF.svg)](https://vitejs.dev/)
+[![Firebase](https://img.shields.io/badge/Firebase-Latest-FFA611.svg)](https://firebase.google.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-Latest-38B2AC.svg)](https://tailwindcss.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+🚀 **[View Live Demo](https://library-mgmt-jamalihassan0307.web.app)** | 📚 **[Documentation](#features)** | 🔑 **[Login](https://library-mgmt-jamalihassan0307.web.app)**
+
+![Project Banner](public/dashboard.png)
+
+</div>
+
+### Quick Access
+
+- 📖 **Demo Account**: demo@gmail.com / 1234
+- 🌐 **Live Demo**: [Visit Site](https://library-mgmt-jamalihassan0307.web.app)
+- ⭐ **Key Features**: Book Management, User Records, Real-time Updates
+- 🛠️ **Tech Stack**: React, Firebase, Tailwind CSS, Vite
+
 ## 🔴 Live Demo
 
 Check out the live demo: [https://library-mgmt-jamalihassan0307.web.app](https://library-mgmt-jamalihassan0307.web.app)
