@@ -10,7 +10,7 @@ const Login = () => {
 
   // Dummy user for testing
   const dummyUser = {
-    email: "hasnain@gmail.com",
+    email: "demo@gmail.com",
     password: "1234",
   };
 

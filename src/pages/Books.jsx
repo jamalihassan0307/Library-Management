@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 
+const API_URL = "https://67896c1c2c874e66b7d8b168.mockapi.io/library";
+
 const Books = () => {
   const navigate = useNavigate();
   const [books, setBooks] = useState([]);
@@ -12,6 +14,7 @@ const Books = () => {
   const [isAddBookModalOpen, setIsAddBookModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all"); // "all", "available", "borrowed"
+  const [availableBooks, setAvailableBooks] = useState([]);
 
   const handleLogout = () => {
     localStorage.removeItem("isAuthenticated");
@@ -19,81 +22,36 @@ const Books = () => {
   };
 
   useEffect(() => {
-    // Load books from localStorage or use default data
-    const storedBooks = localStorage.getItem("books");
-    if (storedBooks) {
-      setBooks(JSON.parse(storedBooks));
-    } else {
-      // Initial dummy data
-      const initialBooks = [
-        {
-          id: 1,
-          title: "The Great Gatsby",
-          author: "F. Scott Fitzgerald",
-          imageUrl: "https://example.com/gatsby.jpg",
-          status: "available",
-          price: 29.99,
-          isbn: "978-3-16-148410-0",
-          publisher: "Scribner",
-          publishedYear: 1925,
-          description: "The Great Gatsby is a 1925 novel...",
-          genre: "Fiction",
-          pages: 180,
-        },
-        {
-          id: 2,
-          title: "To Kill a Mockingbird",
-          author: "Harper Lee",
-          imageUrl: "https://example.com/mockingbird.jpg",
-          status: "available",
-          price: 24.99,
-          isbn: "978-0-446-31078-9",
-          publisher: "Grand Central",
-          publishedYear: 1960,
-          description: "To Kill a Mockingbird is a novel by Harper Lee...",
-          genre: "Fiction",
-          pages: 281,
-        },
-        {
-          id: 3,
-          title: "1984",
-          author: "George Orwell",
-          imageUrl: "https://example.com/1984.jpg",
-          status: "available",
-          price: 19.99,
-          isbn: "978-0-452-28423-4",
-          publisher: "Penguin Books",
-          publishedYear: 1949,
-          description: "1984 is a dystopian novel by George Orwell...",
-          genre: "Science Fiction",
-          pages: 328,
-        },
-        {
-          id: 4,
-          title: "Pride and Prejudice",
-          author: "Jane Austen",
-          imageUrl: "https://example.com/pride.jpg",
-          status: "available",
-          price: 22.99,
-          isbn: "978-0-141-43951-8",
-          publisher: "Penguin Classics",
-          publishedYear: 1813,
-          description: "Pride and Prejudice follows the turbulent relationship between Elizabeth Bennet...",
-          genre: "Romance",
-          pages: 432,
-        },
-        // Add more books as needed
-      ];
-      setBooks(initialBooks);
-      localStorage.setItem("books", JSON.stringify(initialBooks));
-    }
+    const fetchBooks = async () => {
+      try {
+        const response = await fetch(`${API_URL}/bookes`);
+        const data = await response.json();
+        setBooks(data);
+        setAvailableBooks(data.filter((book) => book.status === "available"));
+        localStorage.setItem("books", JSON.stringify(data));
+      } catch (error) {
+        console.error("Error fetching books:", error);
+      }
+    };
+
+    fetchBooks();
   }, []);
 
-  const handleDelete = (bookId) => {
+  const handleDelete = async (bookId) => {
     if (window.confirm("Are you sure you want to delete this book?")) {
-      const updatedBooks = books.filter((book) => book.id !== bookId);
-      setBooks(updatedBooks);
-      localStorage.setItem("books", JSON.stringify(updatedBooks));
+      try {
+        const response = await fetch(`${API_URL}/bookes/${bookId}`, {
+          method: "DELETE",
+        });
+
+        if (response.ok) {
+          const updatedBooks = books.filter((book) => book.id !== bookId);
+          setBooks(updatedBooks);
+          localStorage.setItem("books", JSON.stringify(updatedBooks));
+        }
+      } catch (error) {
+        console.error("Error deleting book:", error);
+      }
     }
   };
 
@@ -103,35 +61,29 @@ const Books = () => {
     setIsModalOpen(true);
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    
-    // Check if the book status changed from borrowed to available
-    const originalBook = books.find(b => b.id === editedBook.id);
-    if (originalBook.status === "borrowed" && editedBook.status === "available") {
-      // Update borrowers' records
-      const storedBorrowers = JSON.parse(localStorage.getItem("borrowers") || "[]");
-      const updatedBorrowers = storedBorrowers.map(borrower => {
-        // Find if this borrower has this book
-        const hasBook = borrower.borrowedBooks.some(book => book.id === editedBook.id);
-        if (hasBook) {
-          // Update the book's returned status
-          const updatedBooks = borrower.borrowedBooks.map(book => 
-            book.id === editedBook.id ? { ...book, returned: true } : book
-          );
-          return { ...borrower, borrowedBooks: updatedBooks };
-        }
-        return borrower;
+
+    try {
+      const response = await fetch(`${API_URL}/bookes/${editedBook.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(editedBook),
       });
-      localStorage.setItem("borrowers", JSON.stringify(updatedBorrowers));
+
+      if (response.ok) {
+        const updatedBooks = books.map((book) =>
+          book.id === editedBook.id ? editedBook : book
+        );
+        setBooks(updatedBooks);
+        localStorage.setItem("books", JSON.stringify(updatedBooks));
+      }
+    } catch (error) {
+      console.error("Error updating book:", error);
     }
 
-    // Update books list
-    const updatedBooks = books.map((book) =>
-      book.id === editedBook.id ? editedBook : book
-    );
-    setBooks(updatedBooks);
-    localStorage.setItem("books", JSON.stringify(updatedBooks));
     setIsModalOpen(false);
     setIsEditMode(false);
     setEditedBook(null);
@@ -367,19 +319,32 @@ const Books = () => {
       pages: "",
     });
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
       e.preventDefault();
-      const bookToAdd = {
-        ...newBook,
-        id: Date.now(),
-        price: parseFloat(newBook.price),
-        pages: parseInt(newBook.pages),
-        publishedYear: parseInt(newBook.publishedYear),
-      };
 
-      const updatedBooks = [...books, bookToAdd];
-      setBooks(updatedBooks);
-      localStorage.setItem("books", JSON.stringify(updatedBooks));
+      try {
+        const response = await fetch(`${API_URL}/bookes`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...newBook,
+            id: Date.now().toString(),
+            status: "available",
+          }),
+        });
+
+        if (response.ok) {
+          const addedBook = await response.json();
+          const updatedBooks = [...books, addedBook];
+          setBooks(updatedBooks);
+          localStorage.setItem("books", JSON.stringify(updatedBooks));
+        }
+      } catch (error) {
+        console.error("Error adding book:", error);
+      }
+
       onClose();
     };
 
@@ -394,47 +359,71 @@ const Books = () => {
                 onClick={onClose}
                 className="text-gray-400 hover:text-gray-500"
               >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Title</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Title
+                </label>
                 <input
                   type="text"
                   required
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   value={newBook.title}
-                  onChange={(e) => setNewBook({ ...newBook, title: e.target.value })}
+                  onChange={(e) =>
+                    setNewBook({ ...newBook, title: e.target.value })
+                  }
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Author</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Author
+                </label>
                 <input
                   type="text"
                   required
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   value={newBook.author}
-                  onChange={(e) => setNewBook({ ...newBook, author: e.target.value })}
+                  onChange={(e) =>
+                    setNewBook({ ...newBook, author: e.target.value })
+                  }
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Image URL</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Image URL
+                </label>
                 <input
                   type="url"
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   value={newBook.imageUrl}
-                  onChange={(e) => setNewBook({ ...newBook, imageUrl: e.target.value })}
+                  onChange={(e) =>
+                    setNewBook({ ...newBook, imageUrl: e.target.value })
+                  }
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Price</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Price
+                </label>
                 <input
                   type="number"
                   required
@@ -442,34 +431,46 @@ const Books = () => {
                   min="0"
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   value={newBook.price}
-                  onChange={(e) => setNewBook({ ...newBook, price: e.target.value })}
+                  onChange={(e) =>
+                    setNewBook({ ...newBook, price: e.target.value })
+                  }
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">ISBN</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  ISBN
+                </label>
                 <input
                   type="text"
                   required
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   value={newBook.isbn}
-                  onChange={(e) => setNewBook({ ...newBook, isbn: e.target.value })}
+                  onChange={(e) =>
+                    setNewBook({ ...newBook, isbn: e.target.value })
+                  }
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Publisher</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Publisher
+                </label>
                 <input
                   type="text"
                   required
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   value={newBook.publisher}
-                  onChange={(e) => setNewBook({ ...newBook, publisher: e.target.value })}
+                  onChange={(e) =>
+                    setNewBook({ ...newBook, publisher: e.target.value })
+                  }
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Published Year</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Published Year
+                </label>
                 <input
                   type="number"
                   required
@@ -477,41 +478,55 @@ const Books = () => {
                   max={new Date().getFullYear()}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   value={newBook.publishedYear}
-                  onChange={(e) => setNewBook({ ...newBook, publishedYear: e.target.value })}
+                  onChange={(e) =>
+                    setNewBook({ ...newBook, publishedYear: e.target.value })
+                  }
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Genre</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Genre
+                </label>
                 <input
                   type="text"
                   required
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   value={newBook.genre}
-                  onChange={(e) => setNewBook({ ...newBook, genre: e.target.value })}
+                  onChange={(e) =>
+                    setNewBook({ ...newBook, genre: e.target.value })
+                  }
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Pages</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Pages
+                </label>
                 <input
                   type="number"
                   required
                   min="1"
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   value={newBook.pages}
-                  onChange={(e) => setNewBook({ ...newBook, pages: e.target.value })}
+                  onChange={(e) =>
+                    setNewBook({ ...newBook, pages: e.target.value })
+                  }
                 />
               </div>
 
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Description
+                </label>
                 <textarea
                   required
                   rows="3"
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   value={newBook.description}
-                  onChange={(e) => setNewBook({ ...newBook, description: e.target.value })}
+                  onChange={(e) =>
+                    setNewBook({ ...newBook, description: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -538,12 +553,12 @@ const Books = () => {
   };
 
   // Filter books based on search and status
-  const filteredBooks = books.filter(book => {
-    const matchesSearch = 
+  const filteredBooks = books.filter((book) => {
+    const matchesSearch =
       book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
       book.isbn.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     if (statusFilter === "all") return matchesSearch;
     return matchesSearch && book.status === statusFilter;
   });
@@ -555,7 +570,9 @@ const Books = () => {
         <div className="mb-6 flex justify-between items-center">
           <div>
             <h2 className="text-3xl font-bold text-gray-900">Library Books</h2>
-            <p className="mt-2 text-gray-600">Manage your library's book collection</p>
+            <p className="mt-2 text-gray-600">
+              Manage your library's book collection
+            </p>
           </div>
           <button
             onClick={() => setIsAddBookModalOpen(true)}
