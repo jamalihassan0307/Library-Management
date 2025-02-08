@@ -12,8 +12,6 @@ A modern web application for managing library operations, built with React and F
 
 🚀 **[View Live Demo](https://library-mgmt-jamalihassan0307.web.app)** | 📚 **[Documentation](#features)** | 🔑 **[Login](https://library-mgmt-jamalihassan0307.web.app)**
 
-![Project Banner](public/dashboard.png)
-
 </div>
 
 ### Quick Access
