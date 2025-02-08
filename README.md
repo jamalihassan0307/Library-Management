@@ -104,31 +104,6 @@ _Edit Borrower Details_
 - Tailwind CSS
 - Local Storage for data persistence
 
-## ⚙️ Installation & Deployment
-
-1. Clone and Install:
-
-- Clone the repository: `git clone https://github.com/jamalihassan0307/library-management-system.git`
-- Navigate to the project directory: `cd library-management-system`
-- Install the dependencies: `npm install`
-- Start the development server: `npm run dev`
-
-2. Deployment:
-
-- Build the project: `npm run build`
-- Deploy the project to Firebase: `firebase deploy`
-
-3. Firebase Configuration:
-
-- Ensure you have the Firebase CLI installed: `npm install -g firebase-tools`
-- Login to your Firebase account: `firebase login`
-- Set the correct project: `firebase use --add`
-- Deploy the project: `firebase deploy`
-
-4. Firebase Hosting:
-
-- The project is deployed to Firebase Hosting. You can access it at the URL provided in the deployment logs.
-
 ## 🔑 Login Credentials
 
 - Email: demo@gmail.com
